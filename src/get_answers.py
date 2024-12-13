@@ -5,13 +5,25 @@ from langchain_core.messages import SystemMessage, HumanMessage, AIMessage
 from langchain_chroma import Chroma
 from src.process_doc import PERSIST_DIRECTORY
 
+from concurrent.futures import ThreadPoolExecutor
+
+
+def process_question(question):
+    queries = get_query(question)
+    relevant_docs = search_docs(queries)
+    answer = get_answer(question, relevant_docs)
+    return question, answer
+
 
 def get_answers(questions: List[str]):
-    for question in questions:
-        queries = get_query(question)
-        relevant_docs = search_docs(queries)
-        answer = get_answer(question, relevant_docs)
-        yield question, answer
+    results = {}
+    with ThreadPoolExecutor(max_workers=len(questions)) as executor:
+        future_to_question = {executor.submit(
+            process_question, question): question for question in questions}
+        for future in future_to_question:
+            question, answer = future.result()
+            results[question] = answer
+    return json.dumps(results, indent=4)
 
 
 def get_query(question: str) -> str:
@@ -48,13 +60,19 @@ def search_docs(queries: List[str]) -> List[str]:
 def get_answer(question: str, relevant_docs: List[str]) -> str:
     # Now, based on the relevant documents, find the answer to the question.
     prompt = f"""Given the input question and relevant documents, your job is to find the answer to the question.
-Your output should be the answer to the question.
+
+Your output should meet the following criteria:
+1. If the question matches a sentence or phrase word-for-word in the relevant documents, extract that exact sentence or phrase as the answer.
+2. If the question does not match word-for-word but the answer can still be inferred confidently from the relevant documents, provide the most accurate answer supported by the documents.
+3. If you cannot confidently determine the answer from the relevant documents, respond with "Data Not Available."
+
+Input:
 Question: {question}
 Relevant Documents: {relevant_docs}
 
-Note, make sure that you the answer is contained in the relevant documents.
-Do not hallucinate or generate answers that are not supported by the documents.
-If you have low confidence in the answer, you should respond with "Data Not Available"
+Note:
+- You are allowed to correct any grammatical errors in the answer. But make sure that the meaning of the answer is preserved.
+- Do not hallucinate or generate answers that are not supported by the documents.
 """
     response = ChatOpenAI(
         model='gpt-4o-mini').invoke([SystemMessage(prompt)])

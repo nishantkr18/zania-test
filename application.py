@@ -1,3 +1,4 @@
+import json
 import sys
 __import__('pysqlite3')
 sys.modules['sqlite3'] = sys.modules.pop('pysqlite3')
@@ -27,9 +28,15 @@ if st.button("Get Answers"):
         questions = questions_input.split("\n")
         st.subheader("Answers")
         with st.spinner("Getting answers from OpenAI..."):
-            for pair in get_answers(questions):
-                st.write("Question:", pair[0])
-                st.write("Answer:", pair[1])
+            response = get_answers(questions)
+            # Convert the JSON response to a dictionary
+            answers_dict = json.loads(response)
+
+            # Display each question and its corresponding answer
+            for question, answer in answers_dict.items():
+                st.write(f"**Question:** {question}")
+                st.write(f"**Answer:** {answer}")
+                st.write("---")  # Separator between Q&A pairs
 
     else:
         st.error("Please upload a PDF file and enter at least one question.")
