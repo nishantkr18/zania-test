@@ -15,3 +15,13 @@ To submit your solution, please provide the following:
 3. **Code Quality Enhancements**: Describe how you would have made your code more modular, scalable, and production-grade.
 
 4. **Demo**: A video or demo of your program in action.
+
+
+# Solution:
+
+## How to run the code:
+```bash
+pip install -r requirements.txt
+streamlit run application.py
+```
+
