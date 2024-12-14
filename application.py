@@ -1,13 +1,12 @@
 import json
 import sys
+# Ensure compatibility with pysqlite3
+__import__('pysqlite3')
+sys.modules['sqlite3'] = sys.modules.pop('pysqlite3')
 import os
 import streamlit as st
 from src.get_answers import get_answers
 from src.process_doc import load_data
-
-# Ensure compatibility with pysqlite3
-__import__('pysqlite3')
-sys.modules['sqlite3'] = sys.modules.pop('pysqlite3')
 
 # Streamlit app title
 st.title("PDF Question Answering App")
